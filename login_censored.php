@@ -11,7 +11,7 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // In a real-world scenario, you should store this in a config file
-    $stored_hash = '$2y$10$dddddddPdTU0cEGze'; // use the hash generator to create a new hash
+    $stored_hash = '$2y$1123456$GIfHdddPdTU0cEGzeddddd'; // use the hash generator to create a new hash
     
     $password = $_POST['password'] ?? '';
     
@@ -70,9 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <button type="submit" class="btn btn-primary w-100">Login</button>
                 </form>
                 
-                <div class="mt-3 text-center">
-                    <small class="text-muted">Default password is "admin"</small>
-                </div>
             </div>
         </div>
     </div>
