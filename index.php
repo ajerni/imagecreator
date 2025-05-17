@@ -1,12 +1,21 @@
+<?php
+// Include authentication check
+require_once 'auth.php';
+
+// Handle logout handling was moved to logout.php
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Creator</title>
-    <!-- Bootstrap CSS from CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        body {
+            padding: 20px;
+        }
         .image-container {
             min-height: 400px;
             max-width: 512px;
@@ -27,19 +36,17 @@
             max-height: 100%;
             object-fit: contain;
         }
-        @media (max-width: 1100px) {
-            .image-container {
-                width: 100%;
-                max-width: 100%;
-            }
-        }
     </style>
 </head>
 <body>
-    <div class="container m-5 ">
+    <!-- Main Application -->
+    <div class="container">
         <div class="row">
             <div class="col-md-10 mx-auto">
-                <h1 class="mb-4">Andi's Image Creator</h1>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>Andi's Image Creator</h1>
+                    <a href="logout.php" class="btn btn-outline-danger">Logout</a>
+                </div>
                 <div class="card">
                     <div class="card-body">
                         <form id="imageForm">
@@ -63,9 +70,6 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
         document.getElementById('imageForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -107,7 +111,7 @@
                     throw new Error(`Error: ${response.status}`);
                 }
                 
-                // Check the content type to determine how to handle the response
+                // Handle the image response
                 const contentType = response.headers.get('content-type');
                 
                 if (contentType && contentType.includes('application/json')) {
@@ -115,12 +119,10 @@
                     const result = await response.json();
                     
                     if (result.imageBase64) {
-                        // If response contains base64 image data
                         generatedImage.src = `data:image/png;base64,${result.imageBase64}`;
                         generatedImage.style.display = 'block';
                         placeholderText.style.display = 'none';
                     } else if (result.imageUrl) {
-                        // If response contains image URL
                         generatedImage.src = result.imageUrl;
                         generatedImage.style.display = 'block';
                         placeholderText.style.display = 'none';
@@ -135,41 +137,10 @@
                     generatedImage.style.display = 'block';
                     placeholderText.style.display = 'none';
                 } else {
-                    // Try to get the response as text for debugging
+                    // Try to process as text
                     const responseText = await response.text();
-                    
-                    // Check if it's a base64 encoded image (often starts with data:image)
-                    if (responseText.startsWith('data:image') || responseText.match(/^[A-Za-z0-9+/=]+$/)) {
-                        // It's likely a base64 encoded image without proper formatting
-                        const base64Data = responseText.replace(/^data:image\/\w+;base64,/, '');
-                        generatedImage.src = `data:image/png;base64,${base64Data}`;
-                        generatedImage.style.display = 'block';
-                        placeholderText.style.display = 'none';
-                    } else {
-                        // Try to handle the raw PNG data that might be returned
-                        try {
-                            // Create a Blob from the binary data
-                            const byteCharacters = atob(responseText);
-                            const byteArrays = [];
-                            
-                            for (let i = 0; i < byteCharacters.length; i++) {
-                                byteArrays.push(byteCharacters.charCodeAt(i));
-                            }
-                            
-                            const byteArray = new Uint8Array(byteArrays);
-                            const blob = new Blob([byteArray], {type: 'image/png'});
-                            const imageUrl = URL.createObjectURL(blob);
-                            
-                            generatedImage.src = imageUrl;
-                            generatedImage.style.display = 'block';
-                            placeholderText.style.display = 'none';
-                        } catch (error) {
-                            console.error("Failed to process image data:", error);
-                            placeholderText.textContent = `Received response, but could not process as image: ${responseText.substring(0, 100)}...`;
-                        }
-                    }
+                    placeholderText.textContent = 'Received response but could not process as image';
                 }
-                
             } catch (error) {
                 console.error('Error:', error);
                 placeholderText.textContent = `Error generating image: ${error.message}`;
@@ -180,5 +151,7 @@
             }
         });
     </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 
