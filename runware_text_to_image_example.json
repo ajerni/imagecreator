@@ -1,0 +1,16 @@
+[
+  {
+    "taskType": "imageInference",
+    "taskUUID": "a2e1c7b2-4f8e-4b6a-9c2e-1d3f5b7e8a9c",
+    "outputType": "URL",
+    "outputFormat": "jpg",
+    "positivePrompt": "A beautiful landscape, vivid colors, high detail",
+    "negativePrompt": "low quality, distorted",
+    "height": 512,
+    "width": 512,
+    "model": "runware:100@1",
+    "steps": 4,
+    "CFGScale": 7,
+    "numberResults": 1
+  }
+] 

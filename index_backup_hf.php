@@ -98,7 +98,7 @@ require_once 'auth.php';
                 const credentials = btoa(`${credentialsData.username}:${credentialsData.password}`);
                 
                 // Make the request to the webhook
-                const response = await fetch('https://n8n.ernilabs.com/webhook/e8d9beec-fabb-44be-95ad-48ed75fa26fd', {
+                const response = await fetch('https://n8n.ernilabs.com/webhook/97c09d1a-1cac-4b73-9b43-47650035ecd2', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -115,32 +115,9 @@ require_once 'auth.php';
                 const contentType = response.headers.get('content-type');
                 
                 if (contentType && contentType.includes('application/json')) {
+                    // Handle JSON response
                     const result = await response.json();
-                    console.log('API result:', result);
-
-                    // Handle case where result is an object with a 'data' property (not an array)
-                    if (result.data) {
-                        let innerData;
-                        try {
-                            innerData = JSON.parse(result.data);
-                        } catch (e) {
-                            placeholderText.textContent = 'Error parsing image data.';
-                            return;
-                        }
-                        if (
-                            innerData.data &&
-                            Array.isArray(innerData.data) &&
-                            innerData.data.length > 0 &&
-                            innerData.data[0].imageURL
-                        ) {
-                            generatedImage.src = innerData.data[0].imageURL;
-                            generatedImage.style.display = 'block';
-                            placeholderText.style.display = 'none';
-                            return;
-                        }
-                    }
-
-                    // Fallbacks for other possible formats
+                    
                     if (result.imageBase64) {
                         generatedImage.src = `data:image/png;base64,${result.imageBase64}`;
                         generatedImage.style.display = 'block';
@@ -151,7 +128,6 @@ require_once 'auth.php';
                         placeholderText.style.display = 'none';
                     } else {
                         placeholderText.textContent = 'Image generation completed, but no image data received';
-                        generatedImage.style.display = 'none';
                     }
                 } else if (contentType && contentType.includes('image/')) {
                     // Handle direct image response
