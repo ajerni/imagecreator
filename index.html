@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Creator</title>
+    <!-- Bootstrap CSS from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .image-container {
+            min-height: 400px;
+            max-width: 512px;
+            margin: 20px auto;
+            border: 1px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1 / 1;
+            position: relative;
+            overflow: hidden;
+        }
+        .loading {
+            display: none;
+        }
+        #generatedImage {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        @media (max-width: 1100px) {
+            .image-container {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container m-5 ">
+        <div class="row">
+            <div class="col-md-10 mx-auto">
+                <h1 class="mb-4">Andi's Image Creator</h1>
+                <div class="card">
+                    <div class="card-body">
+                        <form id="imageForm">
+                            <div class="mb-3">
+                                <label for="promptText" class="form-label">Enter your image prompt:</label>
+                                <input type="text" class="form-control" id="promptText" placeholder="Describe the image you want to create..." required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="createBtn">Create Image</button>
+                            <div class="spinner-border text-primary mt-3 loading" id="loadingSpinner" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </form>
+                        
+                        <div class="image-container" id="imageContainer">
+                            <p class="text-muted" id="placeholderText">Your generated image will appear here.</p>
+                            <img id="generatedImage" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.getElementById('imageForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const promptText = document.getElementById('promptText').value;
+            const createBtn = document.getElementById('createBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const placeholderText = document.getElementById('placeholderText');
+            const generatedImage = document.getElementById('generatedImage');
+            
+            // Show loading state
+            createBtn.disabled = true;
+            loadingSpinner.style.display = 'inline-block';
+            placeholderText.textContent = 'Generating your image...';
+            generatedImage.style.display = 'none';
+            
+            try {
+                // Fetch credentials from PHP file
+                const credentialsResponse = await fetch('credentials.php');
+                
+                if (!credentialsResponse.ok) {
+                    throw new Error('Failed to load authentication credentials');
+                }
+                
+                const credentialsData = await credentialsResponse.json();
+                const credentials = btoa(`${credentialsData.username}:${credentialsData.password}`);
+                
+                // Make the request to the webhook
+                const response = await fetch('https://n8n.ernilabs.com/webhook/97c09d1a-1cac-4b73-9b43-47650035ecd2', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Basic ${credentials}`
+                    },
+                    body: JSON.stringify({ text: promptText })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+                
+                // Check the content type to determine how to handle the response
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    // Handle JSON response
+                    const result = await response.json();
+                    
+                    if (result.imageBase64) {
+                        // If response contains base64 image data
+                        generatedImage.src = `data:image/png;base64,${result.imageBase64}`;
+                        generatedImage.style.display = 'block';
+                        placeholderText.style.display = 'none';
+                    } else if (result.imageUrl) {
+                        // If response contains image URL
+                        generatedImage.src = result.imageUrl;
+                        generatedImage.style.display = 'block';
+                        placeholderText.style.display = 'none';
+                    } else {
+                        placeholderText.textContent = 'Image generation completed, but no image data received';
+                    }
+                } else if (contentType && contentType.includes('image/')) {
+                    // Handle direct image response
+                    const blob = await response.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    generatedImage.src = imageUrl;
+                    generatedImage.style.display = 'block';
+                    placeholderText.style.display = 'none';
+                } else {
+                    // Try to get the response as text for debugging
+                    const responseText = await response.text();
+                    
+                    // Check if it's a base64 encoded image (often starts with data:image)
+                    if (responseText.startsWith('data:image') || responseText.match(/^[A-Za-z0-9+/=]+$/)) {
+                        // It's likely a base64 encoded image without proper formatting
+                        const base64Data = responseText.replace(/^data:image\/\w+;base64,/, '');
+                        generatedImage.src = `data:image/png;base64,${base64Data}`;
+                        generatedImage.style.display = 'block';
+                        placeholderText.style.display = 'none';
+                    } else {
+                        // Try to handle the raw PNG data that might be returned
+                        try {
+                            // Create a Blob from the binary data
+                            const byteCharacters = atob(responseText);
+                            const byteArrays = [];
+                            
+                            for (let i = 0; i < byteCharacters.length; i++) {
+                                byteArrays.push(byteCharacters.charCodeAt(i));
+                            }
+                            
+                            const byteArray = new Uint8Array(byteArrays);
+                            const blob = new Blob([byteArray], {type: 'image/png'});
+                            const imageUrl = URL.createObjectURL(blob);
+                            
+                            generatedImage.src = imageUrl;
+                            generatedImage.style.display = 'block';
+                            placeholderText.style.display = 'none';
+                        } catch (error) {
+                            console.error("Failed to process image data:", error);
+                            placeholderText.textContent = `Received response, but could not process as image: ${responseText.substring(0, 100)}...`;
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                placeholderText.textContent = `Error generating image: ${error.message}`;
+            } finally {
+                // Reset UI state
+                createBtn.disabled = false;
+                loadingSpinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 
