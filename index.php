@@ -45,7 +45,7 @@ require_once 'auth.php';
             <div class="col-md-10 mx-auto">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h1>Andi's Image Creator</h1>
-                    <h2>(creatioins visible on <a href="https://imagegallery.andierni.ch" target="_blank" rel="noopener" text-decoration: underline;">imagegallery.andierni.ch</a>)</h2>
+                    <h4>(creatioins visible on <a href="https://imagegallery.andierni.ch" target="_blank" rel="noopener" text-decoration: underline;">imagegallery.andierni.ch</a>)</h4>
                     <a href="logout.php" class="btn btn-outline-danger">Logout</a>
                 </div>
                 <div class="card">
